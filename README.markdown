@@ -50,7 +50,7 @@ Let's say we're modeling article submission from journalists. An article
 is written, then submitted. When it's submitted, it's awaiting review.
 Someone reviews the article, and then either accepts or rejects it.
 Here is the expression of this workflow using the API:
-
+```ruby
     class Article
       include Workflow
       workflow do
@@ -68,7 +68,7 @@ Here is the expression of this workflow using the API:
         state :rejected
       end
     end
-
+```
 Nice, isn't it!
 
 Note: the first state in the definition (`:new` in the example, but you
@@ -76,23 +76,23 @@ can name it as you wish) is used as the initial state - newly created
 objects start their life cycle in that state.
 
 Let's create an article instance and check in which state it is:
-
+```ruby
     article = Article.new
     article.accepted? # => false
     article.new? # => true
-
+```
 You can also access the whole `current_state` object including the list
 of possible events and other meta information:
-
+```ruby
     article.current_state
     => #<Workflow::State:0x7f1e3d6731f0 @events={
       :submit=>#<Workflow::Event:0x7f1e3d6730d8 @action=nil,
         @transitions_to=:awaiting_review, @name=:submit, @meta={}>},
       name:new, meta{}
-
+```
 On Ruby 1.9 and above, you can check whether a state comes before or
 after another state (by the order they were defined):
-
+```ruby
     article.current_state
     => being_reviewed
     article.current_state < :accepted
@@ -101,13 +101,13 @@ after another state (by the order they were defined):
     => false
     article.current_state.between? :awaiting_review, :rejected
     => true
-
+```
 Now we can call the submit event, which transitions to the
 <tt>:awaiting_review</tt> state:
-
+```ruby
     article.submit!
     article.awaiting_review? # => true
-
+```
 Events are actually instance methods on a workflow, and depending on the
 state you're in, you'll have a different set of events used to
 transition to other states.
@@ -119,9 +119,9 @@ event (transition) defined for the current state.
 
 Installation
 ------------
-
+```sh
     gem install workflow
-
+```
 **Important**: If you're interested in graphing your workflow state machine, you will also need to
 install the `activesupport` and `ruby-graphviz` gems.
 
@@ -144,11 +144,11 @@ Examples
 
 After installation or downloading of the library you can easily try out
 all the example code from this README in irb.
-
+```ruby
     $ irb
     require 'rubygems'
     require 'workflow'
-
+```
 Now just copy and paste the source code from the beginning of this README
 file snippet by snippet and observe the output.
 
@@ -160,13 +160,13 @@ The best way is to use convention over configuration and to define a
 method with the same name as the event. Then it is automatically invoked
 when event is raised. For the Article workflow defined earlier it would
 be:
-
+```ruby
     class Article
       def reject
         puts 'sending email to the author explaining the reason...'
       end
     end
-
+```
 `article.review!; article.reject!` will cause state transition to
 `being_reviewed` state, persist the new state (if integrated with
 ActiveRecord), invoke this user defined `reject` method and finally
@@ -181,7 +181,7 @@ when transition occurs.
 
 You can also define event handler accepting/requiring additional
 arguments:
-
+```ruby
     class Article
       def review(reviewer = '')
         puts "[#{reviewer}] is now reviewing the article"
@@ -191,16 +191,16 @@ arguments:
     article2 = Article.new
     article2.submit!
     article2.review!('Homer Simpson') # => [Homer Simpson] is now reviewing the article
-
+```
 
 ### The old, deprecated way
 
 The old way, using a block is still supported but deprecated:
-
+```ruby
     event :review, :transitions_to => :being_reviewed do |reviewer|
       # store the reviewer
     end
-
+```
 We've noticed, that mixing the list of events and states with the blocks
 invoked for particular transitions leads to a bumpy and poorly readable code
 due to a deep nesting. We tried (and dismissed) lambdas for this. Eventually
@@ -214,14 +214,14 @@ Integration with ActiveRecord
 Workflow library can handle the state persistence fully automatically. You
 only need to define a string field on the table called `workflow_state`
 and include the workflow mixin in your model class as usual:
-
+```ruby
     class Order < ActiveRecord::Base
       include Workflow
       workflow do
         # list states and transitions here
       end
     end
-
+```
 On a database record loading all the state check methods e.g.
 `article.state`, `article.awaiting_review?` are immediately available.
 For new records or if the `workflow_state` field is not set the state
@@ -239,7 +239,7 @@ method.
 
 Workflow library also adds automatically generated scopes with names based on
 states names:
-
+```ruby
     class Order < ActiveRecord::Base
       include Workflow
       workflow do
@@ -253,20 +253,20 @@ states names:
 
     # returns all orders with `pending` state
     Order.with_pending_state
-
+```
 
 ### Custom workflow database column
 
 [meuble](http://imeuble.info/) contributed a solution for using
 custom persistence column easily, e.g. for a legacy database schema:
-
+```ruby
     class LegacyOrder < ActiveRecord::Base
       include Workflow
 
       workflow_column :foo_bar # use this legacy database column for
                                # persistence
     end
-
+```
 
 
 ### Single table inheritance
@@ -294,7 +294,7 @@ Integration with CouchDB
 We are using the compact [couchtiny library](http://github.com/geekq/couchtiny)
 here. But the implementation would look similar for the popular
 couchrest library.
-
+```ruby
     require 'couchtiny'
     require 'couchtiny/document'
     require 'workflow'
@@ -317,7 +317,7 @@ couchrest library.
         save!
       end
     end
-
+```
 Please also have a look at
 [the full source code](http://github.com/geekq/workflow/blob/master/test/couchtiny_example.rb).
 
@@ -342,7 +342,7 @@ If you want to implement support for your favorite ORM mapper or your
 favorite NoSQL database, you just need to implement a module which
 overrides the persistence methods `load_workflow_state` and
 `persist_workflow_state`. Example:
-
+```ruby
     module Workflow
       module SuperCoolDb
         module InstanceMethods
@@ -366,9 +366,9 @@ overrides the persistence methods `load_workflow_state` and
         end
       end
     end
-
+```
 The user of the adapter can use it then as:
-
+```ruby
     class Article
       include Workflow
       include Workflow:SuperCoolDb
@@ -377,7 +377,7 @@ The user of the adapter can use it then as:
         # ...
       end
     end
-
+```
 I can then link to your implementation from this README. Please let me
 also know, if you need any interface beyond `load_workflow_state` and
 `persist_workflow_state` methods to implement an adapter for your
@@ -408,7 +408,7 @@ Accessing your workflow specification
 
 You can easily reflect on workflow specification programmatically - for
 the whole class or for the current object. Examples:
-
+```ruby
     article2.current_state.events # lists possible events from here
     article2.current_state.events[:reject].transitions_to # => :rejected
 
@@ -420,11 +420,11 @@ the whole class or for the current object. Examples:
 
     # list all events for all states
     Article.workflow_spec.states.values.collect &:events
-
+```
 
 You can also store and later retrieve additional meta data for every
 state and every event:
-
+```ruby
     class MyProcess
       include Workflow
       workflow do
@@ -433,7 +433,7 @@ state and every event:
       end
     end
     puts MyProcess.workflow_spec.states[:supplemental].meta[:importance] # => 1
-
+```
 The workflow library itself uses this feature to tweak the graphical
 representation of the workflow. See below.
 
@@ -442,7 +442,7 @@ Conditional event transitions
 -----------------------------
 
 Conditions can be a "method name symbol" with a corresponding instance method, a `proc` or `lambda` which are added to events, like so:
-
+```ruby
     state :off
       event :turn_on, :transition_to => :on,
                       :if => :sufficient_battery_level?
@@ -455,7 +455,7 @@ Conditions can be a "method name symbol" with a corresponding instance method, a
     def sufficient_battery_level?
       battery_level > 10
     end
-
+```
 When calling a `device.can_<fire_event>?` check, or attempting a `device.<event>!`, each event is checked in turn:
 
 * With no `:if` check, proceed as usual.
@@ -479,7 +479,7 @@ convention, e.g. for the state :pending just define the method
 
 If you want to be informed about everything happening everywhere, e.g. for
 logging then you can use the universal `on_transition` hook:
-
+```ruby
     workflow do
       state :one do
         event :increment, :transitions_to => :two
@@ -489,7 +489,7 @@ logging then you can use the universal `on_transition` hook:
         Log.info "#{from} -> #{to}"
       end
     end
-
+```
 Please also have a look at the [advanced end to end
 example][advanced_hooks_and_validation_test].
 
@@ -499,7 +499,7 @@ example][advanced_hooks_and_validation_test].
 
 If you want to do custom exception handling internal to workflow, you can define an `on_error` hook in your workflow.
 For example:
-
+```ruby
     workflow do
       state :first do
         event :forward, :transitions_to => :second
@@ -510,7 +510,7 @@ For example:
         Log.info "Exception(#error.class) on #{from} -> #{to}"
       end
     end
-
+```
 If forward! results in an exception, `on_error` is invoked and the workflow stays in a 'first' state.  This capability
 is particularly useful if your errors are transient and you want to queue up a job to retry in the future without
 affecting the existing workflow state.
@@ -522,12 +522,12 @@ exception in your [transition event handler](#transition_event_handler).
 There is a helper called `halt!`, which raises the
 Workflow::TransitionHalted exception. You can provide an additional
 `halted_because` parameter.
-
+```ruby
     def reject(reason)
       halt! 'We do not reject articles unless the reason is important' \
         unless reason =~ /important/i
     end
-
+```
 The traditional `halt` (without the exclamation mark) is still supported
 too. This just prevents the state change without raising an
 exception.
@@ -563,7 +563,7 @@ hierarchy. You can use [single table inheritance][STI] so there is only
 single `orders` table in the database. Read more in the chapter "Single
 Table Inheritance" of the [ActiveRecord documentation][ActiveRecord].
 Then you define your different classes:
-
+```ruby
     class Order < ActiveRecord::Base
       include Workflow
     end
@@ -579,13 +579,13 @@ Then you define your different classes:
         # workflow for big orders, probably with a longer approval chain
       end
     end
-
+```
 
 ### Individual workflows for objects
 
 Another solution would be to connect different workflows to object
 instances via metaclass, e.g.
-
+```ruby
     # Load an object from the database
     booking = Booking.find(1234)
 
@@ -600,7 +600,7 @@ instances via metaclass, e.g.
         end
       end
     # if some other condition, use a different workflow
-
+```
 You can also encapsulate this in a class method or even put in some
 ActiveRecord callback. Please also have a look at [the full working
 example][multiple_workflow_test]!
@@ -616,7 +616,7 @@ Documenting with diagrams
 You can generate a graphical representation of the workflow for
 a particular class for documentation purposes.
 Use `Workflow::create_workflow_diagram(class)` in your rake task like:
-
+```ruby
     namespace :doc do
       desc "Generate a workflow graph for a model passed e.g. as 'MODEL=Order'."
       task :workflow => :environment do
@@ -624,7 +624,7 @@ Use `Workflow::create_workflow_diagram(class)` in your rake task like:
         Workflow::Draw::workflow_diagram(ENV['MODEL'].constantize)
       end
     end
-
+```
 
 Earlier versions
 ----------------
@@ -643,20 +643,20 @@ Migration from the original Ryan's library
 Credit: Michael (rockrep)
 
 Accessing workflow specification
-
+```ruby
     my_instance.workflow # old
     MyClass.workflow_spec # new
-
+```
 Accessing states, events, meta, e.g.
-
+```ruby
     my_instance.workflow.states(:some_state).events(:some_event).meta[:some_meta_tag] # old
     MyClass.workflow_spec.states[:some_state].events[:some_event].meta[:some_meta_tag] # new
-
+```
 Causing state transitions
-
+```ruby
     my_instance.workflow.my_event # old
     my_instance.my_event! # new
-
+```
 when using both a block and a callback method for an event, the block executes prior to the callback
 
 
@@ -762,19 +762,19 @@ To reduce this clutter it is now possible to use state entry- and
 exit- hooks defined through a naming convention. For example, if there
 is a state :pending, then instead of using a
 block:
-
+```ruby
     state :pending do
       on_entry do
         # your implementation here
       end
     end
-
+```
 you can hook in by defining method
-
+```ruby
     def on_pending_exit(new_state, event, *args)
       # your implementation here
     end
-
+```
 anywhere in your class. You can also use a simpler function signature
 like `def on_pending_exit(*args)` if your are not interested in
 arguments.  Please note: `def on_pending_exit()` with an empty list
